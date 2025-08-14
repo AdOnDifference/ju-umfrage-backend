@@ -19,9 +19,31 @@ app.use(express.json());
 app.use(requestIp.mw());
 
 const origins = CORS_ORIGIN.split(",").map(s => s.trim()).filter(Boolean);
-app.use(cors({
-  origin: origins.length ? origins : "*"
-}));
+
+// Sichtbar machen, was wirklich aus der Env kommt
+const allowList = origins; // z. B. ["http://localhost:3000","https://ju-umfrage-frontend-ne1p.vercel.app"]
+console.log("CORS allow list:", allowList);
+
+const corsMiddleware = cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // z. B. curl ohne Origin
+    const allowed =
+        allowList.includes(origin) ||
+        // Dev: alle localhost-Varianten erlauben
+        /^http:\/\/localhost(?::\d+)?$/.test(origin);
+    if (allowed) return cb(null, true);
+    console.warn("CORS blocked:", origin, "not in", allowList);
+    return cb(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
+});
+
+app.use(corsMiddleware);
+// wichtig: Preflight für alle Routen
+app.options("*", corsMiddleware);
+
 
 const pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
