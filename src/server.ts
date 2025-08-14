@@ -18,10 +18,9 @@ app.use(helmet());
 app.use(express.json());
 app.use(requestIp.mw());
 
+// CORS: robuste Allow-List + Preflight (OPTIONS)
 const origins = CORS_ORIGIN.split(",").map(s => s.trim()).filter(Boolean);
-
-// Sichtbar machen, was wirklich aus der Env kommt
-const allowList = origins; // z. B. ["http://localhost:3000","https://ju-umfrage-frontend-ne1p.vercel.app"]
+const allowList = origins; // z. B. ['http://localhost:3000','https://ju-umfrage-frontend-ne1p.vercel.app']
 console.log("CORS allow list:", allowList);
 
 const corsMiddleware = cors({
@@ -29,11 +28,11 @@ const corsMiddleware = cors({
     if (!origin) return cb(null, true); // z. B. curl ohne Origin
     const allowed =
         allowList.includes(origin) ||
-        // Dev: alle localhost-Varianten erlauben
+        // alle Preview-Deploys deines Vercel-Projekts erlauben:
+        /^https:\/\/ju-umfrage-frontend-ne1p-[a-z0-9-]+\.vercel\.app$/.test(origin) ||
+        // local dev: jede localhost-Variante (Port egal)
         /^http:\/\/localhost(?::\d+)?$/.test(origin);
-    if (allowed) return cb(null, true);
-    console.warn("CORS blocked:", origin, "not in", allowList);
-    return cb(new Error("Not allowed by CORS"));
+    return allowed ? cb(null, true) : cb(new Error("Not allowed by CORS"));
   },
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -41,8 +40,9 @@ const corsMiddleware = cors({
 });
 
 app.use(corsMiddleware);
-// wichtig: Preflight für alle Routen
+// Preflight für alle Routen
 app.options("*", corsMiddleware);
+
 
 
 const pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
