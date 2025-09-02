@@ -32,6 +32,9 @@ const corsMiddleware = cors({
         /^https:\/\/ju-umfrage-frontend-ne1p-[a-z0-9-]+\.vercel\.app$/.test(origin) ||
         // die Haupt-Prod-Domain explizit erlauben:
         origin === "https://ju-umfrage-frontend.vercel.app" ||
+        // neue Domains für dein Projekt:
+        origin === "https://mein-floersheim.de" ||
+        origin === "https://www.mein-floersheim.de" ||
         // local dev: jede localhost-Variante (Port egal)
         /^http:\/\/localhost(?::\d+)?$/.test(origin);
     return allowed ? cb(null, true) : cb(new Error("Not allowed by CORS"));
